@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Search, ShoppingCart, User, X } from 'lucide-react';
+import { Menu, Search, ShoppingCart, User, X, Shield, Package, LayoutGrid } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useCart } from './CartProvider';
 import { useAuth } from './AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,6 +21,23 @@ export function Header() {
   const { state: cartState } = useCart();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      setIsAdmin(data?.role === 'admin');
+    };
+    checkAdmin();
+  }, [user]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,12 +115,48 @@ export function Header() {
               )}
             </Button>
 
+            {/* Admin Menu */}
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Shield className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Painel Admin</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin">
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Produtos</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/categorias">
+                      <LayoutGrid className="mr-2 h-4 w-4" />
+                      <span>Categorias</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/pedidos">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      <span>Pedidos</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/clientes">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Clientes</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* User Menu */}
             {user ? (
               <div className="flex items-center space-x-2">
-                <span className="hidden sm:inline text-sm text-muted-foreground">
-                  Olá, {user.email?.split('@')[0]}
-                </span>
                 <Button
                   variant="ghost"
                   size="icon"
