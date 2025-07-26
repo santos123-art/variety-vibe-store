@@ -21,7 +21,7 @@ export type Database = {
         }
         Insert: {
           email: string
-          id: string
+          id?: string
         }
         Update: {
           email?: string
